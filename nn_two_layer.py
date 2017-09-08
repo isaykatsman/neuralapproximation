@@ -108,6 +108,7 @@ plt.ylabel('Accuracy')
 plt.xlabel('Epoch')
 plt.legend(['Training Classification Accuracy','Validation Classification Accuracy'], loc='upper right')
 plt.savefig(results_folder+'plots/reconstructed_acc.png')
+plt.clf()
 print("Saved plots.")
 
 # predict on test data, will be submitted to numerai
@@ -119,5 +120,14 @@ y_pred = model.predict(x_pred)
 pred_file = open('preds.txt','w')
 for i,j in zip(x_pred, y_pred):
     pred_file.write("%f %f\n" % (i,j))
-
 pred_file.close()
+
+# graph matplot lib
+x_axis = [x for x in range(3*step)]
+perf = [x**2 for x in range(3*step)]
+plt.plot(y_pred)
+plt.plot(perf)
+plt.title('Function Approximation')
+plt.legend(['Y predicted', 'Y perfect (original)'], loc='upper right')
+plt.savefig('main_pred.png')
+plt.clf()

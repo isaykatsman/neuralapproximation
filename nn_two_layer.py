@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from sklearn import metrics, preprocessing, linear_model
 from sklearn.metrics import log_loss
 from keras.models import Sequential
-from keras.layers import Dense, Dropout
+from keras.layers import Dense, Dropout, BatchNormalization
 from keras.callbacks import CSVLogger
 import os, sys
 import tensorflow as tf
@@ -15,8 +15,14 @@ import random
 exp_name = 'tournament_'+sys.argv[1]
 results_folder = 'results/'+exp_name+'/'
 step = 50
+bottom_range = list(range(0, step))
+mid_range = list(range(step, 2*step))
+top_range = list(range(2*step, 3*step))
 
-# setup folders 
+def gen_func(x):
+    return 50*math.sin(x/10)
+
+# setup folders
 # setup experiment directory
 if not os.path.exists(results_folder):
     os.makedirs(results_folder)
@@ -33,8 +39,8 @@ print("Loading data...")
 # setup x and y training data
 #x_train_old = [float(x) for x in range(step)]
 #x_train = random.sample(set(x_train_old), int(step*3/5))
-x_train = [float(x) for x in range(0,step)]
-x_train.extend([float(x) for x in range(2*step,3*step)])
+x_train = [float(x) for x in bottom_range]
+x_train.extend([float(x) for x in top_range])
 # x_comp = list(set(x_train_old) - set(x_train))
 # # write out to file
 # pred_file_vals = open('intermediatevals.txt','w')
@@ -51,8 +57,8 @@ x_train.extend([float(x) for x in range(2*step,3*step)])
 y_train = [x**2 for x in x_train]
 
 # setup x and y validation data
-x_val = [float(x) for x in range(step,2*step)]
-y_val = [x**2 for x in x_val]
+x_val = [float(x) for x in mid_range]
+y_val = [gen_func(x) for x in x_val]
 
 # custom loss
 def custom_loss(y_true, y_pred):
@@ -63,8 +69,13 @@ model = Sequential()
 model.add(Dense(100, input_dim=1, activation='relu'))
 #model.add(Dense(200, activation='relu'))
 #model.add(Dense(200, activation='relu'))
-#model.add(Dropout(0.5))
-#model.add(Dense(100, activation='relu'))
+# model.add(BatchNormalization())
+# model.add(Dropout(0.5))
+#model.add(Dense(100, input_dim=1, activation='relu'))
+model.add(Dense(100, activation='relu'))
+model.add(Dense(100, activation='relu'))
+# model.add(BatchNormalization())
+# model.add(Dropout(0.5))
 #model.add(Dropout(0.5))
 model.add(Dense(1))
 
@@ -87,7 +98,7 @@ history = model.fit(x_train,
                     epochs=25000,#5000,
                     batch_size=10000,
                     callbacks=[csv_logger],
-                    shuffle=True) 
+                    shuffle=True)
 
 # save plots
 #plot history for just training loss
@@ -113,7 +124,7 @@ print("Saved plots.")
 
 # predict on test data, will be submitted to numerai
 # test data (only have x, numerai will evaluate on y)
-x_pred = [float(x) for x in range(3*step)]
+x_pred = [float(x) for x in bottom_range + mid_range + top_range]
 y_pred = model.predict(x_pred)
 
 # write out to file
@@ -123,8 +134,8 @@ for i,j in zip(x_pred, y_pred):
 pred_file.close()
 
 # graph matplot lib
-x_axis = [x for x in range(3*step)]
-perf = [x**2 for x in range(3*step)]
+x_axis = [x for x in bottom_range + mid_range + top_range]
+perf = [gen_func(x) for x in bottom_range + mid_range + top_range]
 plt.plot(y_pred)
 plt.plot(perf)
 plt.title('Function Approximation')
